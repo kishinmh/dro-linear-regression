@@ -4,7 +4,7 @@ import typing
 class DROLinearRegressionSolver:
   def __init__(self, 
                design: typing.List[np.array], 
-               response: typing.List[np.float],
+               response: typing.List[np.float] | np.array,
                config: typing.Dict):
     self.design = design
     self.response = response
@@ -21,6 +21,22 @@ class DROLinearRegressionSolver:
     if "GeometryType" in self.config:
       self.geometry_type = self.config["GeometryType"]
       assert self.geometry_type in ["Trivial", "Lewis"], f"invalid geometry type passed {self.geometry_type}"
+
+    # dimension validations
+    self.dim = design[0].shape[1]
+    for des in design:
+      assert des.shape[1] == self.dim, f"Dimension mismatch in design. Expected {self.dim} but got the matrix {des}"
+    assert len(design) == len(response), f"Received {len(design)} designs and {len(response)} responses"
+    self.num_problems = len(design)
+    
+    if not isinstance(response, np.array):
+      self.response = np.array(self.response)
+    assert self.response.shape in [(self.num_problems, 1), (self.num_problems, ), (1, self.num_problems)], f"Responses have invalid shape {self.response.shape}"
+
+    self.x = np.zeros(self.dim)
+
+  def objective(self):
+
 
   def compute_geometry(self):
     # TODO: implement
