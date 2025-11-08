@@ -23,7 +23,8 @@ class DROLinearRegressionSolver:
       assert self.geometry_type in ["Trivial", "Lewis"], f"invalid geometry type passed {self.geometry_type}"
 
   def compute_geometry(self):
-
+    # TODO: implement
+    return None
 
   def step(self, x: np.array) -> np.array:
     # perform a single iteration of the algorithm starting at x
