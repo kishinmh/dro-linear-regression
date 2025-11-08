@@ -1,7 +1,7 @@
 import numpy as np
 import typing
 
-def _construct_row_map(matrices: np.array):
+def _construct_row_map(matrices: np.array | typing.List[np.array]):
   row_counts = [matrix.shape[0] for matrix in matrices]
   cumulative_row_counts = np.cumsum([0] + row_counts)
   row_index_map = {
@@ -23,7 +23,7 @@ def leverage_scores(mat: np.array):
   inv = np.linalg.inv(mat.T @ mat)
   return np.diag(mat @ inv @ mat.T)
 
-def block_lewis_weights(mat: np.array, p):
+def block_lewis_weights(mat: np.array | typing.List[np.array], p):
   assert len(mat.shape) == 3, "Input must be a 3D numpy array. Received something with shape {mat.shape}"
   index_map = _construct_row_map(mat)
   reverse_index_map = _reverse_row_map(index_map)
@@ -49,7 +49,18 @@ class DROLinearRegression:
                design: typing.List[np.array], 
                response: typing.List[np.array],
                config: typing.Dict):
+    # dimension validations
+    self.dim = design[0].shape[1]
+    for des in design:
+      assert des.shape[1] == self.dim, f"Dimension mismatch in design. Expected {self.dim} but got the matrix {des}"
+    assert len(design) == len(response), f"Received {len(design)} designs and {len(response)} responses"
+
+    # set everything up
     self.design = np.array(design)
+    self.stacked_design = np.concatenate(self.design, axis=0)
+    self.stacked_response = np.concatenate(response)
+    self.row_map = _construct_row_map(self.design)
+    self.reverse_row_map = _reverse_row_map(self.row_map)
     self.response = np.array(response)
     self.config = config
     if "p" not in self.config:
@@ -66,15 +77,11 @@ class DROLinearRegression:
       assert self.geometry_type in ["Trivial", "Lewis"], f"invalid geometry type passed {self.geometry_type}"
     else:
       self.geometry_type = "Trivial"
-
-    # dimension validations
-    self.dim = design[0].shape[1]
-    for des in design:
-      assert des.shape[1] == self.dim, f"Dimension mismatch in design. Expected {self.dim} but got the matrix {des}"
-    assert len(design) == len(response), f"Received {len(design)} designs and {len(response)} responses"
     self.num_problems = len(design)
+    self.num_rows = self.stacked_design.shape[0]
 
     self.x = np.zeros(self.dim)
+    self.W = np.eye(self.num_rows)
 
   def objective(self, input_point: np.array, powered: bool=False):
     l2norms = np.linalg.norm(self.design @ input_point - response, axis=1, ord=2)
@@ -86,7 +93,7 @@ class DROLinearRegression:
   def compute_geometry(self):
     # TODO: implement
     if self.geometry_type == "Trivial":
-      # do one thing
+      # do nothing here, we have already initialized W
       pass
     elif self.geometry_type == "Lewis":
       # do one other thing
