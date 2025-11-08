@@ -23,6 +23,9 @@ def leverage_scores(mat: np.array):
   inv = np.linalg.inv(mat.T @ mat)
   return np.diag(mat @ inv @ mat.T)
 
+def solve_system(mat: np.array, vec: np.array):
+  return np.linalg.pinv(mat) @ vec
+
 def block_lewis_weights(mat: np.array | typing.List[np.array], p):
   assert len(mat.shape) == 3, "Input must be a 3D numpy array. Received something with shape {mat.shape}"
   index_map = _construct_row_map(mat)
@@ -31,15 +34,16 @@ def block_lewis_weights(mat: np.array | typing.List[np.array], p):
   m = mat.shape[0]
   n = A.shape[0]
   d = A.shape[1]
-  T = 3 * np.log(m) # TODO: what's a constant that's good enough
+  print(f"m = {m}, n = {n}, d = {d}")
+  T = int(np.ceil(3 * np.log(m))) # TODO: what's a constant that's good enough
   b = d / m * np.ones(n)
   b_vec = [b]
-  for t in range(int(np.ceil(T))):
+  for t in range(T):
     b_prev = b_vec[-1]
     lev_scores = leverage_scores(np.diag(np.power(b_prev, 0.5 - 1.0 / p)) @ A)
-
+    lev_scores = lev_scores * d / sum(lev_scores)
     new_weights = np.array([sum(lev_scores[j] for j in index_map[i]) for i in range(m)])
-    b_new = np.array([new_weights[reverse_index_map[i]] for i in reverse_index_map])
+    b_new = np.array([new_weights[reverse_index_map[i]] for i in range(len(reverse_index_map))])
 
     b_vec.append(b_new)
   return 1.1 * sum(b_vec) / T
@@ -81,7 +85,8 @@ class DROLinearRegression:
     self.num_rows = self.stacked_design.shape[0]
 
     self.x = np.zeros(self.dim)
-    self.w = np.ones(self.num_rows)
+    self.compute_geometry()
+    self.warm_start()
 
   def objective(self, input_point: np.array, powered: bool=False):
     l2norms = np.linalg.norm(self.design @ input_point - response, axis=1, ord=2)
@@ -91,18 +96,12 @@ class DROLinearRegression:
     return unpowered
 
   def compute_geometry(self):
-    # TODO: implement
     if self.geometry_type == "Trivial":
-      # do nothing here, we have already initialized W
-      pass
+      self.w = np.ones(self.num_rows)
     elif self.geometry_type == "Lewis":
       # do one other thing
       appended_response = np.concatenate([self.design, self.response[:, :, np.newaxis]], axis=2)
       self.w = block_lewis_weights(appended_response)
-
-  def initialize(self):
-    # TODO: implement
-    return None
 
   def step(self) -> np.array:
     # perform a single iteration of the algorithm and update the internal state variables
