@@ -26,9 +26,11 @@ class DROLinearRegressionSolver:
     # TODO: implement
     return None
 
-  def step(self, x: np.array) -> np.array:
-    # perform a single iteration of the algorithm starting at x
+  def initialize(self):
+    # TODO: implement
+    return None
+
+  def step(self) -> np.array:
+    # perform a single iteration of the algorithm and update the internal state variables
     # TODO: implement
     return np.array([0.0])
-
-  def 
