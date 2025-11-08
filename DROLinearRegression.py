@@ -1,7 +1,7 @@
 import numpy as np
 import typing
 
-class DROLinearRegressionSolver:
+class DROLinearRegression:
   def __init__(self, 
                design: typing.List[np.array], 
                response: typing.List[np.array],
