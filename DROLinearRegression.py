@@ -113,9 +113,18 @@ class DROLinearRegression:
     self.x = solve_system(W_powered_left @ self.stacked_design, W_powered_left @ self.stacked_response)
 
   def ball_oracle(self, x, radius, accuracy):
+    # roughly solve min f(x') + Reg||x'-x||_M^2
+    # grad f(x') + 2Reg M (x' - x) = 0
+    # decrease the regularization until we move at least 0.9 * radius away from x
+    raised = np.power(self.w, 1.0 - 2.0 / self.p)
+    W_powered_squared = np.diag(raised)
+
+    M = self.stacked_design.T @ W_powered_squared @ self.stacked_design
     pass
 
   def step(self) -> np.array:
     # perform a single iteration of the algorithm and update the internal state variables
     # this is just going to be a trivial iteration of the ball oracle
-    self.x = self.ball_oracle(self.x, self.num_problems, self.eps)
+    radius = 20 * np.log(self.num_problems) / self.eps
+    accuracy = self.eps / np.sqrt(self.dim)
+    self.x = self.ball_oracle(self.x, radius, accuracy)
