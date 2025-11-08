@@ -42,6 +42,12 @@ class DROLinearRegressionSolver:
 
   def compute_geometry(self):
     # TODO: implement
+    if self.geometry_type == "Trivial":
+      # do one thing
+      pass
+    elif self.geometry_type == "Lewis":
+      # do one nother thing
+      pass
     return None
 
   def initialize(self):
