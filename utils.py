@@ -21,6 +21,8 @@ class DROLinearRegressionSolver:
     if "GeometryType" in self.config:
       self.geometry_type = self.config["GeometryType"]
       assert self.geometry_type in ["Trivial", "Lewis"], f"invalid geometry type passed {self.geometry_type}"
+    else:
+      self.geometry_type = "Trivial"
 
     # dimension validations
     self.dim = design[0].shape[1]
