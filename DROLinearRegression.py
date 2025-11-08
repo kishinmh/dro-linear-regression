@@ -34,7 +34,6 @@ def block_lewis_weights(mat: np.array | typing.List[np.array], p):
   m = mat.shape[0]
   n = A.shape[0]
   d = A.shape[1]
-  print(f"m = {m}, n = {n}, d = {d}")
   T = int(np.ceil(3 * np.log(m))) # TODO: what's a constant that's good enough
   b = d / m * np.ones(n)
   b_vec = [b]
@@ -89,8 +88,13 @@ class DROLinearRegression:
     self.compute_geometry()
     self.warm_start()
 
+    if "eps" not in self.config:
+      self.eps = 1e-3
+    else:
+      self.eps = self.config["eps"]
+
   def objective(self, input_point: np.array, powered: bool=False):
-    l2norms = np.linalg.norm(self.design @ input_point - response, axis=1, ord=2)
+    l2norms = np.linalg.norm(self.design @ input_point - self.response, axis=1, ord=2)
     unpowered = np.linalg.norm(l2norms, ord=self.p)
     if powered:
       return np.power(unpowered, self.p)
@@ -100,7 +104,6 @@ class DROLinearRegression:
     if self.geometry_type == "Trivial":
       self.w = np.ones(self.num_rows)
     elif self.geometry_type == "Lewis":
-      # do one other thing
       appended_response = np.concatenate([self.design, self.response[:, :, np.newaxis]], axis=2)
       self.w = block_lewis_weights(appended_response, self.p)
 
@@ -109,7 +112,10 @@ class DROLinearRegression:
     W_powered_left = np.diag(raised)
     self.x = solve_system(W_powered_left @ self.stacked_design, W_powered_left @ self.stacked_response)
 
+  def ball_oracle(self, x, radius, accuracy):
+    pass
+
   def step(self) -> np.array:
     # perform a single iteration of the algorithm and update the internal state variables
-    # TODO: implement
-    return np.array([0.0])
+    # this is just going to be a trivial iteration of the ball oracle
+    self.x = self.ball_oracle(self.x, self.num_problems, self.eps)
